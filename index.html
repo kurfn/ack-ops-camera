@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1">
+
+  <title>ACK OPS Camera</title>
+
+
+  <style>
+
+    * {
+      box-sizing: border-box;
+    }
+
+
+    body {
+
+      margin: 0;
+
+      padding: 20px;
+
+      font-family: Arial, sans-serif;
+
+      background: #f3f4f6;
+
+      color: #111;
+
+    }
+
+
+    .container {
+
+      max-width: 450px;
+
+      margin: auto;
+
+    }
+
+
+    .card {
+
+      background: white;
+
+      border-radius: 20px;
+
+      padding: 22px;
+
+      box-shadow:
+        0 5px 25px
+        rgba(0,0,0,0.08);
+
+    }
+
+
+    .header {
+
+      text-align: center;
+
+      margin-bottom: 20px;
+
+    }
+
+
+    .logo {
+
+      font-size: 28px;
+
+      font-weight: bold;
+
+    }
+
+
+    .subtitle {
+
+      color: #777;
+
+      margin-top: 5px;
+
+    }
+
+
+    .camera {
+
+      width: 100%;
+
+      background: #000;
+
+      border-radius: 16px;
+
+      overflow: hidden;
+
+    }
+
+
+    video {
+
+      width: 100%;
+
+      display: block;
+
+      aspect-ratio: 3 / 4;
+
+      object-fit: cover;
+
+      transform: scaleX(-1);
+
+    }
+
+
+    canvas {
+
+      display: none;
+
+    }
+
+
+    #preview {
+
+      width: 100%;
+
+      display: none;
+
+      aspect-ratio: 3 / 4;
+
+      object-fit: cover;
+
+      border-radius: 16px;
+
+      transform: scaleX(-1);
+
+    }
+
+
+    .status {
+
+      margin-top: 15px;
+
+      padding: 14px;
+
+      border-radius: 12px;
+
+      background: #f8f8f8;
+
+      text-align: center;
+
+      line-height: 1.6;
+
+    }
+
+
+    button {
+
+      width: 100%;
+
+      padding: 16px;
+
+      margin-top: 12px;
+
+      border: none;
+
+      border-radius: 12px;
+
+      background: #111;
+
+      color: white;
+
+      font-size: 16px;
+
+      font-weight: bold;
+
+    }
+
+
+    button:disabled {
+
+      background: #aaa;
+
+    }
+
+
+    .secondary {
+
+      background: #e5e7eb;
+
+      color: #111;
+
+    }
+
+
+    .success {
+
+      background: #ecfdf3;
+
+      color: #166534;
+
+    }
+
+
+    .danger {
+
+      background: #fef2f2;
+
+      color: #991b1b;
+
+    }
+
+
+  </style>
+
+</head>
+
+
+<body>
+
+
+<div class="container">
+
+
+  <div class="card">
+
+
+    <div class="header">
+
+      <div class="logo">
+
+        ACK OPS
+
+      </div>
+
+      <div class="subtitle">
+
+        Selfie Absensi
+
+      </div>
+
+    </div>
+
+
+    <div class="camera">
+
+      <video
+        id="video"
+        autoplay
+        playsinline>
+      </video>
+
+    </div>
+
+
+    <canvas
+      id="canvas">
+    </canvas>
+
+
+    <img
+      id="preview"
+      alt="Preview Foto">
+
+
+    <div
+      id="status"
+      class="status">
+
+      Kamera sedang dipersiapkan...
+
+    </div>
+
+
+    <button
+      id="startButton"
+      onclick="startCamera()">
+
+      📷 BUKA KAMERA
+
+    </button>
+
+
+    <button
+      id="captureButton"
+      onclick="capturePhoto()"
+      style="display:none;">
+
+      📸 AMBIL FOTO
+
+    </button>
+
+
+    <button
+      id="retakeButton"
+      class="secondary"
+      onclick="retakePhoto()"
+      style="display:none;">
+
+      🔄 ULANGI FOTO
+
+    </button>
+
+
+    <button
+      id="useButton"
+      onclick="usePhoto()"
+      style="display:none;">
+
+      ✓ GUNAKAN FOTO
+
+    </button>
+
+
+  </div>
+
+
+</div>
+
+
+
+<script>
+
+
+let stream = null;
+
+let photoData = null;
+
+
+
+/* =====================================================
+   START CAMERA
+===================================================== */
+
+async function startCamera() {
+
+
+  const status =
+    document.getElementById(
+      'status'
+    );
+
+
+  const startButton =
+    document.getElementById(
+      'startButton'
+    );
+
+
+  const captureButton =
+    document.getElementById(
+      'captureButton'
+    );
+
+
+  try {
+
+
+    if (
+      !navigator.mediaDevices ||
+      !navigator.mediaDevices.getUserMedia
+    ) {
+
+
+      throw new Error(
+        'Browser tidak mendukung akses kamera.'
+      );
+
+    }
+
+
+    status.className =
+      'status';
+
+
+    status.innerText =
+      'Meminta izin kamera...';
+
+
+    startButton.disabled =
+      true;
+
+
+    stream =
+      await navigator.mediaDevices.getUserMedia({
+
+        video: {
+
+          facingMode: {
+            ideal: 'user'
+          },
+
+          width: {
+            ideal: 720
+          },
+
+          height: {
+            ideal: 960
+          }
+
+        },
+
+        audio: false
+
+      });
+
+
+    const video =
+      document.getElementById(
+        'video'
+      );
+
+
+    video.srcObject =
+      stream;
+
+
+    await video.play();
+
+
+    status.className =
+      'status success';
+
+
+    status.innerHTML = `
+
+      ✅ Kamera aktif.
+
+      <br>
+
+      Pastikan wajah terlihat jelas.
+
+    `;
+
+
+    startButton.style.display =
+      'none';
+
+
+    captureButton.style.display =
+      'block';
+
+
+  }
+
+  catch(error) {
+
+
+    console.error(error);
+
+
+    startButton.disabled =
+      false;
+
+
+    status.className =
+      'status danger';
+
+
+    status.innerHTML = `
+
+      ❌ <b>KAMERA TIDAK DAPAT DIBUKA</b>
+
+      <br><br>
+
+      ${getCameraError(error)}
+
+    `;
+
+  }
+
+}
+
+
+
+/* =====================================================
+   CAPTURE PHOTO
+===================================================== */
+
+function capturePhoto() {
+
+
+  const video =
+    document.getElementById(
+      'video'
+    );
+
+
+  const canvas =
+    document.getElementById(
+      'canvas'
+    );
+
+
+  const preview =
+    document.getElementById(
+      'preview'
+    );
+
+
+  const captureButton =
+    document.getElementById(
+      'captureButton'
+    );
+
+
+  const retakeButton =
+    document.getElementById(
+      'retakeButton'
+    );
+
+
+  const useButton =
+    document.getElementById(
+      'useButton'
+    );
+
+
+  if (
+    !video.videoWidth
+  ) {
+
+
+    alert(
+      'Kamera belum siap.'
+    );
+
+
+    return;
+
+  }
+
+
+  canvas.width =
+    video.videoWidth;
+
+
+  canvas.height =
+    video.videoHeight;
+
+
+  const ctx =
+    canvas.getContext(
+      '2d'
+    );
+
+
+  ctx.translate(
+    canvas.width,
+    0
+  );
+
+
+  ctx.scale(
+    -1,
+    1
+  );
+
+
+  ctx.drawImage(
+
+    video,
+
+    0,
+    0,
+
+    canvas.width,
+    canvas.height
+
+  );
+
+
+  photoData =
+    canvas.toDataURL(
+      'image/jpeg',
+      0.85
+    );
+
+
+  preview.src =
+    photoData;
+
+
+  video.style.display =
+    'none';
+
+
+  preview.style.display =
+    'block';
+
+
+  captureButton.style.display =
+    'none';
+
+
+  retakeButton.style.display =
+    'block';
+
+
+  useButton.style.display =
+    'block';
+
+
+  stopCamera();
+
+
+  document
+    .getElementById('status')
+    .className =
+    'status';
+
+
+  document
+    .getElementById('status')
+    .innerText =
+    'Periksa foto sebelum digunakan.';
+
+}
+
+
+
+/* =====================================================
+   RETAKE
+===================================================== */
+
+function retakePhoto() {
+
+
+  photoData =
+    null;
+
+
+  document
+    .getElementById('preview')
+    .style.display =
+    'none';
+
+
+  document
+    .getElementById('video')
+    .style.display =
+    'block';
+
+
+  document
+    .getElementById('retakeButton')
+    .style.display =
+    'none';
+
+
+  document
+    .getElementById('useButton')
+    .style.display =
+    'none';
+
+
+  startCamera();
+
+}
+
+
+
+/* =====================================================
+   USE PHOTO
+===================================================== */
+
+function usePhoto() {
+
+
+  if (!photoData) {
+
+
+    alert(
+      'Foto belum tersedia.'
+    );
+
+
+    return;
+
+  }
+
+
+  document
+    .getElementById('status')
+    .className =
+    'status success';
+
+
+  document
+    .getElementById('status')
+    .innerHTML = `
+
+      ✅ <b>FOTO SIAP</b>
+
+      <br><br>
+
+      Foto berhasil diambil.
+
+      <br>
+
+      Tahap berikutnya foto akan
+      dikirim ke sistem ACK OPS.
+
+    `;
+
+
+  document
+    .getElementById('retakeButton')
+    .style.display =
+    'none';
+
+
+  document
+    .getElementById('useButton')
+    .style.display =
+    'none';
+
+}
+
+
+
+/* =====================================================
+   STOP CAMERA
+===================================================== */
+
+function stopCamera() {
+
+
+  if (!stream) {
+
+    return;
+
+  }
+
+
+  stream
+    .getTracks()
+    .forEach(function(track) {
+
+      track.stop();
+
+    });
+
+
+  stream =
+    null;
+
+}
+
+
+
+/* =====================================================
+   ERROR
+===================================================== */
+
+function getCameraError(error) {
+
+
+  if (
+    error.name ===
+    'NotAllowedError'
+  ) {
+
+    return `
+
+      Akses kamera ditolak.
+
+      <br><br>
+
+      Silakan izinkan kamera
+      untuk website ini melalui
+      pengaturan browser.
+
+    `;
+
+  }
+
+
+  if (
+    error.name ===
+    'NotFoundError'
+  ) {
+
+    return `
+
+      Kamera tidak ditemukan
+      pada perangkat ini.
+
+    `;
+
+  }
+
+
+  if (
+    error.name ===
+    'NotReadableError'
+  ) {
+
+    return `
+
+      Kamera sedang digunakan
+      oleh aplikasi lain.
+
+    `;
+
+  }
+
+
+  if (
+    error.name ===
+    'SecurityError'
+  ) {
+
+    return `
+
+      Browser memblokir akses kamera
+      karena alasan keamanan.
+
+      <br><br>
+
+      Pastikan halaman dibuka
+      menggunakan HTTPS.
+
+    `;
+
+  }
+
+
+  return `
+
+    ${error.message ||
+      'Terjadi kesalahan kamera.'}
+
+  `;
+
+}
+
+
+</script>
+
+
+</body>
+
+</html>
