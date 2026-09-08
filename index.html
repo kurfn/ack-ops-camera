@@ -9,7 +9,7 @@
     name="viewport"
     content="width=device-width, initial-scale=1">
 
-  <title>ACK OPS Camera</title>
+  <title>ACK OPS - Selfie Absensi</title>
 
 
   <style>
@@ -82,6 +82,27 @@
 
       margin-top: 5px;
 
+      font-size: 14px;
+
+    }
+
+
+    .user-info {
+
+      background: #f8f8f8;
+
+      padding: 14px;
+
+      border-radius: 12px;
+
+      margin-bottom: 15px;
+
+      text-align: center;
+
+      font-size: 14px;
+
+      line-height: 1.6;
+
     }
 
 
@@ -110,6 +131,8 @@
 
       transform: scaleX(-1);
 
+      background: #000;
+
     }
 
 
@@ -134,6 +157,8 @@
 
       transform: scaleX(-1);
 
+      background: #000;
+
     }
 
 
@@ -150,6 +175,35 @@
       text-align: center;
 
       line-height: 1.6;
+
+      font-size: 14px;
+
+    }
+
+
+    .success {
+
+      background: #ecfdf3;
+
+      color: #166534;
+
+    }
+
+
+    .danger {
+
+      background: #fef2f2;
+
+      color: #991b1b;
+
+    }
+
+
+    .warning {
+
+      background: #fff7ed;
+
+      color: #9a3412;
 
     }
 
@@ -174,12 +228,16 @@
 
       font-weight: bold;
 
+      cursor: pointer;
+
     }
 
 
     button:disabled {
 
       background: #aaa;
+
+      cursor: not-allowed;
 
     }
 
@@ -193,23 +251,26 @@
     }
 
 
-    .success {
+    .camera-guide {
 
-      background: #ecfdf3;
+      text-align: center;
 
-      color: #166534;
+      color: #777;
 
-    }
+      font-size: 13px;
 
+      margin-top: 10px;
 
-    .danger {
-
-      background: #fef2f2;
-
-      color: #991b1b;
+      line-height: 1.5;
 
     }
 
+
+    .hidden {
+
+      display: none !important;
+
+    }
 
   </style>
 
@@ -224,6 +285,10 @@
 
   <div class="card">
 
+
+    <!-- =============================================
+         HEADER
+    ============================================== -->
 
     <div class="header">
 
@@ -242,7 +307,28 @@
     </div>
 
 
-    <div class="camera">
+
+    <!-- =============================================
+         USER INFO
+    ============================================== -->
+
+    <div
+      id="userInfo"
+      class="user-info">
+
+      Menyiapkan kamera...
+
+    </div>
+
+
+
+    <!-- =============================================
+         CAMERA
+    ============================================== -->
+
+    <div
+      id="cameraArea"
+      class="camera">
 
       <video
         id="video"
@@ -253,59 +339,105 @@
     </div>
 
 
+
+    <!-- =============================================
+         PHOTO PREVIEW
+    ============================================== -->
+
+    <img
+      id="preview"
+      alt="Preview Selfie">
+
+
+
     <canvas
       id="canvas">
     </canvas>
 
 
-    <img
-      id="preview"
-      alt="Preview Foto">
 
+    <!-- =============================================
+         GUIDE
+    ============================================== -->
+
+    <div
+      id="cameraGuide"
+      class="camera-guide">
+
+      Pastikan wajah terlihat jelas
+      dan tidak tertutup.
+
+    </div>
+
+
+
+    <!-- =============================================
+         STATUS
+    ============================================== -->
 
     <div
       id="status"
       class="status">
 
-      Kamera sedang dipersiapkan...
+      Meminta akses kamera...
 
     </div>
 
 
+
+    <!-- =============================================
+         START CAMERA
+    ============================================== -->
+
     <button
       id="startButton"
-      onclick="startCamera()">
+      onclick="startCamera()"
+      class="hidden">
 
       📷 BUKA KAMERA
 
     </button>
 
 
+
+    <!-- =============================================
+         CAPTURE
+    ============================================== -->
+
     <button
       id="captureButton"
       onclick="capturePhoto()"
-      style="display:none;">
+      class="hidden">
 
       📸 AMBIL FOTO
 
     </button>
 
 
+
+    <!-- =============================================
+         RETAKE
+    ============================================== -->
+
     <button
       id="retakeButton"
-      class="secondary"
       onclick="retakePhoto()"
-      style="display:none;">
+      class="secondary hidden">
 
       🔄 ULANGI FOTO
 
     </button>
 
 
+
+    <!-- =============================================
+         USE PHOTO
+    ============================================== -->
+
     <button
       id="useButton"
       onclick="usePhoto()"
-      style="display:none;">
+      class="hidden">
 
       ✓ GUNAKAN FOTO
 
@@ -322,9 +454,92 @@
 <script>
 
 
+/* =====================================================
+   GLOBAL
+===================================================== */
+
 let stream = null;
 
 let photoData = null;
+
+
+
+/* =====================================================
+   PAGE LOAD
+===================================================== */
+
+document.addEventListener(
+  'DOMContentLoaded',
+  function() {
+
+
+    /*
+     * Ambil nama dan toko
+     * dari parameter URL.
+     *
+     * Contoh:
+     *
+     * ?nama=Andi&toko=DTOP%20Sukabumi
+     */
+
+    const params =
+      new URLSearchParams(
+        window.location.search
+      );
+
+
+    const nama =
+      params.get('nama');
+
+
+    const toko =
+      params.get('toko');
+
+
+    const userInfo =
+      document.getElementById(
+        'userInfo'
+      );
+
+
+    if (nama || toko) {
+
+
+      userInfo.innerHTML = `
+
+        <b>
+          ${escapeHtml(
+            nama || ''
+          )}
+        </b>
+
+        <br>
+
+        ${escapeHtml(
+          toko || ''
+        )}
+
+      `;
+
+    }
+
+    else {
+
+
+      userInfo.innerText =
+        'Selfie untuk absensi';
+
+    }
+
+
+    /*
+     * Coba langsung buka kamera.
+     */
+
+    startCamera();
+
+  }
+);
 
 
 
@@ -353,8 +568,18 @@ async function startCamera() {
     );
 
 
+  const video =
+    document.getElementById(
+      'video'
+    );
+
+
   try {
 
+
+    /*
+     * Cek dukungan kamera.
+     */
 
     if (
       !navigator.mediaDevices ||
@@ -369,6 +594,7 @@ async function startCamera() {
     }
 
 
+
     status.className =
       'status';
 
@@ -377,39 +603,59 @@ async function startCamera() {
       'Meminta izin kamera...';
 
 
-    startButton.disabled =
-      true;
+    startButton
+      .classList
+      .add('hidden');
 
+
+    captureButton
+      .classList
+      .add('hidden');
+
+
+
+    /*
+     * Jika kamera sebelumnya masih aktif,
+     * matikan terlebih dahulu.
+     */
+
+    stopCamera();
+
+
+
+    /*
+     * Minta kamera depan.
+     */
 
     stream =
-      await navigator.mediaDevices.getUserMedia({
+      await navigator.mediaDevices
+        .getUserMedia({
 
-        video: {
+          video: {
 
-          facingMode: {
-            ideal: 'user'
+            facingMode: {
+              ideal: 'user'
+            },
+
+            width: {
+              ideal: 720
+            },
+
+            height: {
+              ideal: 960
+            }
+
           },
 
-          width: {
-            ideal: 720
-          },
+          audio: false
 
-          height: {
-            ideal: 960
-          }
-
-        },
-
-        audio: false
-
-      });
+        });
 
 
-    const video =
-      document.getElementById(
-        'video'
-      );
 
+    /*
+     * Hubungkan kamera ke video.
+     */
 
     video.srcObject =
       stream;
@@ -418,13 +664,18 @@ async function startCamera() {
     await video.play();
 
 
+
+    /*
+     * Kamera berhasil.
+     */
+
     status.className =
       'status success';
 
 
     status.innerHTML = `
 
-      ✅ Kamera aktif.
+      ✅ <b>KAMERA AKTIF</b>
 
       <br>
 
@@ -433,24 +684,20 @@ async function startCamera() {
     `;
 
 
-    startButton.style.display =
-      'none';
-
-
-    captureButton.style.display =
-      'block';
-
+    captureButton
+      .classList
+      .remove('hidden');
 
   }
+
 
   catch(error) {
 
 
-    console.error(error);
-
-
-    startButton.disabled =
-      false;
+    console.error(
+      'Camera error:',
+      error
+    );
 
 
     status.className =
@@ -463,9 +710,21 @@ async function startCamera() {
 
       <br><br>
 
-      ${getCameraError(error)}
+      ${getCameraError(
+        error
+      )}
 
     `;
+
+
+    startButton
+      .classList
+      .remove('hidden');
+
+
+    captureButton
+      .classList
+      .add('hidden');
 
   }
 
@@ -516,13 +775,31 @@ function capturePhoto() {
     );
 
 
+  const guide =
+    document.getElementById(
+      'cameraGuide'
+    );
+
+
+  const status =
+    document.getElementById(
+      'status'
+    );
+
+
+
+  /*
+   * Pastikan video sudah memiliki frame.
+   */
+
   if (
-    !video.videoWidth
+    !video.videoWidth ||
+    !video.videoHeight
   ) {
 
 
     alert(
-      'Kamera belum siap.'
+      'Kamera belum siap. Tunggu sebentar lalu coba lagi.'
     );
 
 
@@ -530,6 +807,12 @@ function capturePhoto() {
 
   }
 
+
+
+  /*
+   * Samakan ukuran canvas
+   * dengan kamera.
+   */
 
   canvas.width =
     video.videoWidth;
@@ -539,25 +822,35 @@ function capturePhoto() {
     video.videoHeight;
 
 
-  const ctx =
+
+  const context =
     canvas.getContext(
       '2d'
     );
 
 
-  ctx.translate(
+
+  /*
+   * Mirror foto agar sama
+   * seperti preview selfie.
+   */
+
+  context.save();
+
+
+  context.translate(
     canvas.width,
     0
   );
 
 
-  ctx.scale(
+  context.scale(
     -1,
     1
   );
 
 
-  ctx.drawImage(
+  context.drawImage(
 
     video,
 
@@ -570,6 +863,14 @@ function capturePhoto() {
   );
 
 
+  context.restore();
+
+
+
+  /*
+   * Convert menjadi JPEG.
+   */
+
   photoData =
     canvas.toDataURL(
       'image/jpeg',
@@ -577,11 +878,20 @@ function capturePhoto() {
     );
 
 
+
+  /*
+   * Tampilkan preview.
+   */
+
   preview.src =
     photoData;
 
 
-  video.style.display =
+  document
+    .getElementById(
+      'cameraArea'
+    )
+    .style.display =
     'none';
 
 
@@ -589,38 +899,53 @@ function capturePhoto() {
     'block';
 
 
-  captureButton.style.display =
-    'none';
+
+  /*
+   * Tombol.
+   */
+
+  captureButton
+    .classList
+    .add('hidden');
 
 
-  retakeButton.style.display =
-    'block';
+  retakeButton
+    .classList
+    .remove('hidden');
 
 
-  useButton.style.display =
-    'block';
+  useButton
+    .classList
+    .remove('hidden');
 
 
-  stopCamera();
+
+  guide.innerText =
+    'Periksa foto. Jika sudah sesuai, klik GUNAKAN FOTO.';
 
 
-  document
-    .getElementById('status')
-    .className =
+  status.className =
     'status';
 
 
-  document
-    .getElementById('status')
-    .innerText =
-    'Periksa foto sebelum digunakan.';
+  status.innerText =
+    'Foto berhasil diambil.';
+
+
+
+  /*
+   * Kamera tidak perlu tetap aktif
+   * setelah foto diambil.
+   */
+
+  stopCamera();
 
 }
 
 
 
 /* =====================================================
-   RETAKE
+   RETAKE PHOTO
 ===================================================== */
 
 function retakePhoto() {
@@ -630,29 +955,100 @@ function retakePhoto() {
     null;
 
 
-  document
-    .getElementById('preview')
-    .style.display =
-    'none';
+
+  const cameraArea =
+    document.getElementById(
+      'cameraArea'
+    );
 
 
-  document
-    .getElementById('video')
-    .style.display =
+  const preview =
+    document.getElementById(
+      'preview'
+    );
+
+
+  const captureButton =
+    document.getElementById(
+      'captureButton'
+    );
+
+
+  const retakeButton =
+    document.getElementById(
+      'retakeButton'
+    );
+
+
+  const useButton =
+    document.getElementById(
+      'useButton'
+    );
+
+
+  const guide =
+    document.getElementById(
+      'cameraGuide'
+    );
+
+
+  const status =
+    document.getElementById(
+      'status'
+    );
+
+
+
+  /*
+   * Tampilkan kamera kembali.
+   */
+
+  cameraArea.style.display =
     'block';
 
 
-  document
-    .getElementById('retakeButton')
-    .style.display =
+  preview.style.display =
     'none';
 
 
-  document
-    .getElementById('useButton')
-    .style.display =
-    'none';
 
+  /*
+   * Reset tombol.
+   */
+
+  captureButton
+    .classList
+    .add('hidden');
+
+
+  retakeButton
+    .classList
+    .add('hidden');
+
+
+  useButton
+    .classList
+    .add('hidden');
+
+
+
+  guide.innerText =
+    'Pastikan wajah terlihat jelas dan tidak tertutup.';
+
+
+
+  status.className =
+    'status';
+
+
+  status.innerText =
+    'Menyiapkan kamera...';
+
+
+
+  /*
+   * Buka kamera lagi.
+   */
 
   startCamera();
 
@@ -680,40 +1076,209 @@ function usePhoto() {
   }
 
 
-  document
-    .getElementById('status')
-    .className =
-    'status success';
+
+  const status =
+    document.getElementById(
+      'status'
+    );
 
 
-  document
-    .getElementById('status')
-    .innerHTML = `
-
-      ✅ <b>FOTO SIAP</b>
-
-      <br><br>
-
-      Foto berhasil diambil.
-
-      <br>
-
-      Tahap berikutnya foto akan
-      dikirim ke sistem ACK OPS.
-
-    `;
+  const retakeButton =
+    document.getElementById(
+      'retakeButton'
+    );
 
 
-  document
-    .getElementById('retakeButton')
-    .style.display =
-    'none';
+  const useButton =
+    document.getElementById(
+      'useButton'
+    );
 
 
-  document
-    .getElementById('useButton')
-    .style.display =
-    'none';
+  status.className =
+    'status';
+
+
+  status.innerHTML = `
+
+    ⏳ <b>MENGIRIM FOTO...</b>
+
+    <br><br>
+
+    Mohon tunggu.
+
+  `;
+
+
+  retakeButton
+    .classList
+    .add('hidden');
+
+
+  useButton
+    .classList
+    .add('hidden');
+
+
+
+  /*
+   * Cek apakah halaman ini
+   * dibuka oleh ACK OPS.
+   */
+
+  if (
+    window.opener &&
+    !window.opener.closed
+  ) {
+
+
+    try {
+
+
+      /*
+       * Kirim foto ke ACK OPS.
+       */
+
+      window.opener.postMessage(
+
+        {
+
+          type:
+            'ACK_OPS_ATTENDANCE_PHOTO',
+
+          photo:
+            photoData
+
+        },
+
+        '*'
+
+      );
+
+
+      /*
+       * Tampilkan status.
+       */
+
+      status.className =
+        'status success';
+
+
+      status.innerHTML = `
+
+        ✅ <b>FOTO TERKIRIM</b>
+
+        <br><br>
+
+        Data sedang diproses
+        oleh ACK OPS.
+
+      `;
+
+
+      /*
+       * Tunggu sebentar kemudian
+       * tutup halaman kamera.
+       */
+
+      setTimeout(
+
+        function() {
+
+          window.close();
+
+        },
+
+        1200
+
+      );
+
+    }
+
+
+    catch(error) {
+
+
+      console.error(
+        error
+      );
+
+
+      showSendError();
+
+    }
+
+  }
+
+  else {
+
+
+    /*
+     * Tidak ada parent window.
+     */
+
+    showSendError();
+
+  }
+
+}
+
+
+
+/* =====================================================
+   SEND ERROR
+===================================================== */
+
+function showSendError() {
+
+
+  const status =
+    document.getElementById(
+      'status'
+    );
+
+
+  const retakeButton =
+    document.getElementById(
+      'retakeButton'
+    );
+
+
+  const useButton =
+    document.getElementById(
+      'useButton'
+    );
+
+
+  status.className =
+    'status danger';
+
+
+  status.innerHTML = `
+
+    ❌ <b>SISTEM TIDAK TERHUBUNG</b>
+
+    <br><br>
+
+    Halaman kamera tidak menemukan
+    halaman ACK OPS.
+
+    <br><br>
+
+    Silakan kembali ke ACK OPS
+    dan lakukan CLOCK IN lagi.
+
+  `;
+
+
+  retakeButton
+    .classList
+    .remove('hidden');
+
+
+  useButton
+    .classList
+    .remove('hidden');
 
 }
 
@@ -735,22 +1300,41 @@ function stopCamera() {
 
   stream
     .getTracks()
-    .forEach(function(track) {
+    .forEach(
 
-      track.stop();
+      function(track) {
 
-    });
+        track.stop();
+
+      }
+
+    );
 
 
   stream =
     null;
+
+
+
+  const video =
+    document.getElementById(
+      'video'
+    );
+
+
+  if (video) {
+
+    video.srcObject =
+      null;
+
+  }
 
 }
 
 
 
 /* =====================================================
-   ERROR
+   CAMERA ERROR
 ===================================================== */
 
 function getCameraError(error) {
@@ -760,6 +1344,7 @@ function getCameraError(error) {
     error.name ===
     'NotAllowedError'
   ) {
+
 
     return `
 
@@ -776,10 +1361,33 @@ function getCameraError(error) {
   }
 
 
+
+  if (
+    error.name ===
+    'PermissionDeniedError'
+  ) {
+
+
+    return `
+
+      Izin kamera ditolak.
+
+      <br><br>
+
+      Silakan izinkan akses kamera
+      kemudian coba lagi.
+
+    `;
+
+  }
+
+
+
   if (
     error.name ===
     'NotFoundError'
   ) {
+
 
     return `
 
@@ -791,25 +1399,34 @@ function getCameraError(error) {
   }
 
 
+
   if (
     error.name ===
     'NotReadableError'
   ) {
+
 
     return `
 
       Kamera sedang digunakan
       oleh aplikasi lain.
 
+      <br><br>
+
+      Tutup aplikasi lain yang
+      sedang menggunakan kamera.
+
     `;
 
   }
+
 
 
   if (
     error.name ===
     'SecurityError'
   ) {
+
 
     return `
 
@@ -826,14 +1443,93 @@ function getCameraError(error) {
   }
 
 
+
+  if (
+    error.name ===
+    'TypeError'
+  ) {
+
+
+    return `
+
+      Browser tidak dapat mengakses
+      kamera.
+
+      <br><br>
+
+      Pastikan menggunakan browser
+      versi terbaru dan halaman
+      dibuka melalui HTTPS.
+
+    `;
+
+  }
+
+
+
   return `
 
-    ${error.message ||
-      'Terjadi kesalahan kamera.'}
+    ${escapeHtml(
+      error.message ||
+      'Terjadi kesalahan saat membuka kamera.'
+    )}
 
   `;
 
 }
+
+
+
+/* =====================================================
+   ESCAPE HTML
+===================================================== */
+
+function escapeHtml(value) {
+
+
+  return String(value)
+
+    .replace(
+      /&/g,
+      '&amp;'
+    )
+
+    .replace(
+      /</g,
+      '&lt;'
+    )
+
+    .replace(
+      />/g,
+      '&gt;'
+    )
+
+    .replace(
+      /"/g,
+      '&quot;'
+    )
+
+    .replace(
+      /'/g,
+      '&#039;'
+    );
+
+}
+
+
+
+/* =====================================================
+   PAGE CLOSE
+===================================================== */
+
+window.addEventListener(
+  'beforeunload',
+  function() {
+
+    stopCamera();
+
+  }
+);
 
 
 </script>
