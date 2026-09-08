@@ -7,23 +7,19 @@
 
   <meta
     name="viewport"
-    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    content="width=device-width, initial-scale=1.0"
   >
 
   <title>ACK OPS Camera</title>
+
 
   <style>
 
     * {
       box-sizing: border-box;
-      -webkit-tap-highlight-color: transparent;
     }
 
-    html,
     body {
-
-      width: 100%;
-      min-height: 100%;
 
       margin: 0;
 
@@ -31,23 +27,7 @@
 
       color: white;
 
-      font-family:
-        -apple-system,
-        BlinkMacSystemFont,
-        "Segoe UI",
-        Roboto,
-        Arial,
-        sans-serif;
-
-      overflow-x: hidden;
-
-    }
-
-
-    body {
-
-      min-height: 100vh;
-      min-height: 100dvh;
+      font-family: Arial, sans-serif;
 
     }
 
@@ -56,88 +36,24 @@
 
       width: 100%;
 
-      max-width: 600px;
+      max-width: 480px;
+
+      margin: auto;
 
       min-height: 100vh;
-      min-height: 100dvh;
 
-      margin: 0 auto;
-
-      padding:
-        max(12px, env(safe-area-inset-top))
-        12px
-        max(16px, env(safe-area-inset-bottom))
-        12px;
-
-      display: flex;
-
-      flex-direction: column;
-
-    }
-
-
-    .info {
-
-      flex-shrink: 0;
-
-      text-align: center;
-
-      padding: 8px 4px 12px;
-
-      line-height: 1.45;
-
-      font-size: 14px;
-
-    }
-
-
-    .camera-wrapper {
-
-      width: 100%;
-
-      position: relative;
-
-      overflow: hidden;
-
-      border-radius: 18px;
-
-      background: #000;
+      padding: 15px;
 
     }
 
 
     video {
 
-      display: block;
-
       width: 100%;
-
-      height: auto;
-
-      aspect-ratio: 3 / 4;
-
-      object-fit: cover;
-
-      background: #000;
-
-    }
-
-
-    #preview {
-
-      display: block;
-
-      width: 100%;
-
-      height: auto;
-
-      aspect-ratio: 3 / 4;
-
-      object-fit: cover;
 
       border-radius: 18px;
 
-      background: #000;
+      background: black;
 
     }
 
@@ -149,49 +65,30 @@
     }
 
 
-    .actions {
+    #preview {
 
       width: 100%;
 
-      margin-top: 8px;
+      border-radius: 18px;
 
     }
 
 
     button {
 
-      display: flex;
-
-      align-items: center;
-
-      justify-content: center;
-
       width: 100%;
 
-      min-height: 52px;
+      border: none;
 
-      border: 0;
+      border-radius: 12px;
 
-      border-radius: 14px;
+      padding: 15px;
 
-      padding: 14px 16px;
-
-      margin-top: 10px;
+      margin-top: 12px;
 
       font-size: 16px;
 
-      font-weight: 700;
-
-      cursor: pointer;
-
-      touch-action: manipulation;
-
-    }
-
-
-    button:active {
-
-      transform: scale(.98);
+      font-weight: bold;
 
     }
 
@@ -200,7 +97,7 @@
 
       background: white;
 
-      color: #111;
+      color: black;
 
     }
 
@@ -223,48 +120,22 @@
     }
 
 
+    .info {
+
+      text-align: center;
+
+      padding: 12px 0;
+
+      line-height: 1.5;
+
+      font-size: 14px;
+
+    }
+
+
     .hidden {
 
-      display: none !important;
-
-    }
-
-
-    @media (min-width: 600px) {
-
-      .container {
-
-        padding-left: 20px;
-
-        padding-right: 20px;
-
-      }
-
-    }
-
-
-    @media (max-width: 360px) {
-
-      .container {
-
-        padding-left: 8px;
-
-        padding-right: 8px;
-
-      }
-
-      video,
-      #preview {
-
-        border-radius: 14px;
-
-      }
-
-      button {
-
-        min-height: 50px;
-
-      }
+      display: none;
 
     }
 
@@ -288,54 +159,47 @@
   </div>
 
 
-  <div class="camera-wrapper">
-
-    <video
-      id="video"
-      autoplay
-      playsinline
-    ></video>
-
-    <img
-      id="preview"
-      class="hidden"
-    >
-
-  </div>
+  <video
+    id="video"
+    autoplay
+    playsinline
+  ></video>
 
 
   <canvas id="canvas"></canvas>
 
 
-  <div class="actions">
-
-    <button
-      id="captureButton"
-      class="capture"
-      onclick="capturePhoto()"
-    >
-      Ambil Foto
-    </button>
+  <img
+    id="preview"
+    class="hidden"
+  >
 
 
-    <button
-      id="retryButton"
-      class="retry hidden"
-      onclick="retakePhoto()"
-    >
-      Ambil Ulang
-    </button>
+  <button
+    id="captureButton"
+    class="capture"
+    onclick="capturePhoto()"
+  >
+    Ambil Foto
+  </button>
 
 
-    <button
-      id="sendButton"
-      class="send hidden"
-      onclick="sendPhoto()"
-    >
-      Gunakan Foto
-    </button>
+  <button
+    id="retryButton"
+    class="retry hidden"
+    onclick="retakePhoto()"
+  >
+    Ambil Ulang
+  </button>
 
-  </div>
+
+  <button
+    id="sendButton"
+    class="send hidden"
+    onclick="sendPhoto()"
+  >
+    Gunakan Foto
+  </button>
 
 
   <div
@@ -347,6 +211,7 @@
 
 
 </div>
+
 
 
 <script>
@@ -397,6 +262,7 @@ const timestamp =
   );
 
 
+
 /* =================================================
    CAMERA
 ================================================= */
@@ -404,6 +270,7 @@ const timestamp =
 let stream = null;
 
 let capturedPhoto = null;
+
 
 
 window.addEventListener(
@@ -414,6 +281,7 @@ window.addEventListener(
 
   }
 );
+
 
 
 async function startCamera() {
@@ -437,17 +305,7 @@ async function startCamera() {
         .getUserMedia({
 
           video: {
-
-            facingMode: 'user',
-
-            width: {
-              ideal: 1080
-            },
-
-            height: {
-              ideal: 1440
-            }
-
+            facingMode: 'user'
           },
 
           audio: false
@@ -472,6 +330,7 @@ async function startCamera() {
   }
 
 }
+
 
 
 /* =================================================
@@ -553,6 +412,10 @@ function capturePhoto() {
   ctx.restore();
 
 
+  /*
+   * WATERMARK
+   */
+
   drawWatermark(
     ctx,
     width,
@@ -624,6 +487,7 @@ function capturePhoto() {
 }
 
 
+
 /* =================================================
    WATERMARK
 ================================================= */
@@ -636,10 +500,14 @@ function drawWatermark(
 
   const boxHeight =
     Math.min(
-      210,
+      180,
       height * 0.25
     );
 
+
+  /*
+   * Background transparan
+   */
 
   ctx.fillStyle =
     'rgba(0,0,0,0.70)';
@@ -652,6 +520,10 @@ function drawWatermark(
     boxHeight
   );
 
+
+  /*
+   * Font
+   */
 
   const titleSize =
     Math.max(
@@ -708,6 +580,10 @@ function drawWatermark(
   );
 
 
+  /*
+   * Timestamp
+   */
+
   y +=
     textSize +
     7;
@@ -733,6 +609,10 @@ function drawWatermark(
     y
   );
 
+
+  /*
+   * STATUS
+   */
 
   y +=
     textSize +
@@ -780,6 +660,10 @@ function drawWatermark(
   );
 
 
+  /*
+   * LOCATION
+   */
+
   y +=
     textSize +
     7;
@@ -796,6 +680,7 @@ function drawWatermark(
   );
 
 }
+
 
 
 /* =================================================
@@ -863,6 +748,7 @@ function retakePhoto() {
 }
 
 
+
 /* =================================================
    SEND PHOTO
 ================================================= */
@@ -884,6 +770,17 @@ function sendPhoto() {
       'Mengirim foto...';
 
 
+  /*
+   * Kirim ke Apps Script parent.
+   *
+   * Target "*" sengaja digunakan karena
+   * Apps Script Web App dapat memiliki origin
+   * berbeda tergantung deployment.
+   *
+   * Parent tetap memverifikasi bahwa pengirim
+   * berasal dari kurfn.github.io.
+   */
+
   if (
     window.opener
   ) {
@@ -904,6 +801,10 @@ function sendPhoto() {
     );
 
 
+    /*
+     * Tutup popup
+     */
+
     setTimeout(
       function() {
 
@@ -916,6 +817,7 @@ function sendPhoto() {
   }
 
 }
+
 
 
 /* =================================================
