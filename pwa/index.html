@@ -98,6 +98,67 @@
     allow="camera *; geolocation *"
     allowfullscreen>
   </iframe>
+  <script>
+  // ============================================
+  // ACK OPS - GPS BRIDGE
+  // Meminta GPS dari PWA top-level
+  // lalu mengirim koordinat ke iframe ACK OPS.
+  // ============================================
+
+  let gpsWatchId = null;
+
+  function startPwaGps() {
+    if (!('geolocation' in navigator)) {
+      console.error('GPS tidak tersedia di browser.');
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      function(position) {
+        const gps = {
+          type: 'ACK_OPS_GPS',
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+          accuracy: position.coords.accuracy,
+          timestamp: position.timestamp
+        };
+
+        const iframe = document.querySelector('iframe');
+
+        if (iframe && iframe.contentWindow) {
+          iframe.contentWindow.postMessage(
+            gps,
+            'https://script.google.com'
+          );
+        }
+
+        console.log('ACK OPS GPS:', gps);
+      },
+      function(error) {
+        console.error(
+          'ACK OPS GPS gagal:',
+          error.code,
+          error.message
+        );
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 15000,
+        maximumAge: 0
+      }
+    );
+  }
+
+  window.addEventListener('load', function() {
+  const iframe = document.querySelector('iframe');
+
+  if (iframe) {
+    iframe.addEventListener('load', function() {
+      startPwaGps();
+    });
+  }
+});
+</script>
 <script>
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
