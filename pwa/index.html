@@ -29,11 +29,68 @@
       height: 100%;
       border: 0;
     }
+    .splash {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.splash.hide {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.splash-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.splash-logo {
+  width: 96px;
+  height: 96px;
+  object-fit: contain;
+  margin-bottom: 20px;
+}
+
+.splash-title {
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: #111111;
+}
+
+.splash-subtitle {
+  margin-top: 6px;
+  font-size: 13px;
+  color: #777777;
+}
   </style>
 </head>
 
 <body>
+<div class="splash" id="splash">
+  <div class="splash-content">
 
+    <img
+      class="splash-logo"
+      src="../icon-192.png"
+      alt="ACK OPS">
+
+    <div class="splash-title">ACK OPS</div>
+
+    <div class="splash-subtitle">Operational System</div>
+
+  </div>
+</div>
   <iframe
     src="https://script.google.com/macros/s/AKfycbyAgU_mrb5PFtZb9eaTSFzo_7w1OK5mbTRteXTRW6BbcqpRY7i7sr7qOR5Mbj3Gb8o4Tg/exec"
     allow="camera; geolocation"
@@ -51,6 +108,21 @@
         });
     });
   }
+</script>
+  <script>
+  window.addEventListener('load', () => {
+    setTimeout(() => {
+      const splash = document.getElementById('splash');
+
+      if (splash) {
+        splash.classList.add('hide');
+
+        setTimeout(() => {
+          splash.remove();
+        }, 300);
+      }
+    }, 800);
+  });
 </script>
 </body>
 </html>
