@@ -39,6 +39,18 @@
     allow="camera; geolocation"
     allowfullscreen>
   </iframe>
-
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js')
+        .then(registration => {
+          console.log('ACK OPS Service Worker aktif:', registration.scope);
+        })
+        .catch(error => {
+          console.error('ACK OPS Service Worker gagal:', error);
+        });
+    });
+  }
+</script>
 </body>
 </html>
