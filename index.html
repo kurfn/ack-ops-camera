@@ -182,7 +182,9 @@
 
     <strong>ACK OPS</strong><br>
 
-    Ambil foto selfie untuk absensi.
+<span id="cameraInstruction">
+  Ambil foto selfie untuk absensi.
+</span>
 
   </div>
 
@@ -259,6 +261,22 @@ const params =
 const nama =
   params.get('nama') || '';
 
+const cameraMode =
+  params.get('mode') || '';
+  if (
+  cameraMode === 'REGISTER'
+) {
+
+  const instruction =
+    document.getElementById(
+      'cameraInstruction'
+    );
+
+  if (instruction) {
+    instruction.innerText =
+      'Registrasi wajah. Ambil 3 foto dengan posisi wajah yang jelas.';
+  }
+}
 
 const kategori =
   params.get('kategori') || '';
@@ -321,6 +339,8 @@ let capturedPhoto = null;
 let faceDetector = null;
 
 let faceDetectorReady = false;
+
+let registrationPhotos = [];
 
 
 /* =================================================
@@ -540,8 +560,17 @@ async function initializeFaceDetector() {
       'Ambil Foto';
 
 
-    statusBox.innerText =
-      'Pastikan hanya satu wajah terlihat jelas sebelum mengambil foto.';
+    if (cameraMode === 'REGISTER') {
+
+  statusBox.innerText =
+    'Registrasi Face 1. Pastikan hanya satu wajah terlihat jelas.';
+
+} else {
+
+  statusBox.innerText =
+    'Pastikan hanya satu wajah terlihat jelas sebelum mengambil foto.';
+
+}
 
   }
 
@@ -788,6 +817,22 @@ async function capturePhoto() {
 
   }
 
+/* =================================================
+   FACE REGISTRATION MODE
+================================================= */
+
+if (
+  cameraMode === 'REGISTER'
+) {
+
+  await handleRegistrationCapture(
+    canvas,
+    statusBox,
+    captureButton
+  );
+
+  return;
+}
 
   /* =================================================
      SATU WAJAH
@@ -935,7 +980,104 @@ async function capturePhoto() {
 
 }
 
+/* =================================================
+   FACE REGISTRATION CAPTURE - STEP 2C
+================================================= */
 
+async function handleRegistrationCapture(
+  canvas,
+  statusBox,
+  captureButton
+) {
+
+  const currentNumber =
+    registrationPhotos.length + 1;
+
+  statusBox.innerText =
+    'Memproses Face ' +
+    currentNumber +
+    '...';
+
+  const dataUrl =
+    canvas.toDataURL(
+      'image/jpeg',
+      0.9
+    );
+
+  registrationPhotos.push(
+    dataUrl
+  );
+
+  /*
+   * Belum 3 foto
+   */
+  if (
+    registrationPhotos.length < 3
+  ) {
+
+    const nextNumber =
+      registrationPhotos.length + 1;
+
+    statusBox.innerText =
+      'Face ' +
+      currentNumber +
+      ' berhasil. Silakan ambil Face ' +
+      nextNumber +
+      '.';
+
+    captureButton.disabled =
+      false;
+
+    return;
+  }
+
+  /*
+   * Sudah 3 foto
+   */
+  statusBox.innerText =
+    '3 foto wajah berhasil diambil. Memproses...';
+
+  captureButton.classList.add(
+    'hidden'
+  );
+
+  /*
+   * Kirim ke parent Apps Script.
+   * Belum disimpan ke FACE_DATA.
+   */
+  if (
+    window.opener
+  ) {
+
+    window.opener.postMessage(
+      {
+        type:
+          'ACK_OPS_FACE_REGISTRATION',
+
+        nama:
+          nama,
+
+        face1:
+          registrationPhotos[0],
+
+        face2:
+          registrationPhotos[1],
+
+        face3:
+          registrationPhotos[2]
+      },
+      '*'
+    );
+
+    setTimeout(
+      function() {
+        window.close();
+      },
+      500
+    );
+
+  }
+}
 
 /* =================================================
    WATERMARK
