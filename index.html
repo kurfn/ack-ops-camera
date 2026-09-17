@@ -12,6 +12,11 @@
 
   <title>ACK OPS Camera</title>
 
+  <!-- =================================================
+     FACE RECOGNITION ENGINE - STEP 3A
+================================================== -->
+
+<script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api/dist/face-api.js"></script>
 
   <!-- =================================================
        MEDIAPIPE FACE DETECTOR
@@ -327,6 +332,15 @@ const MAX_PHOTO_BYTES =
 const FACE_CONFIDENCE =
   0.5;
 
+/* =================================================
+   FACE RECOGNITION - STEP 3A
+================================================= */
+
+const FACE_RECOGNITION_MODEL_URL =
+  'https://cdn.jsdelivr.net/gh/vladmandic/face-api@1.7.12/model';
+
+let faceRecognitionReady =
+  false;
 
 /* =================================================
    CAMERA STATE
@@ -354,6 +368,8 @@ window.addEventListener(
     await startCamera();
 
     await initializeFaceDetector();
+
+    await initializeFaceRecognition();
 
   }
 );
@@ -601,7 +617,61 @@ async function initializeFaceDetector() {
 
 }
 
+/* =================================================
+   LOAD FACE RECOGNITION
+   STEP 3A
+================================================= */
 
+async function initializeFaceRecognition() {
+
+  const statusBox =
+    document.getElementById(
+      'status'
+    );
+
+  try {
+
+    statusBox.innerText =
+      'Memuat AI pengenalan wajah...';
+
+    await faceapi.nets.tinyFaceDetector.loadFromUri(
+      FACE_RECOGNITION_MODEL_URL
+    );
+
+    await faceapi.nets.faceLandmark68TinyNet.loadFromUri(
+      FACE_RECOGNITION_MODEL_URL
+    );
+
+    await faceapi.nets.faceRecognitionNet.loadFromUri(
+      FACE_RECOGNITION_MODEL_URL
+    );
+
+    faceRecognitionReady =
+      true;
+
+    console.log(
+      'FACE RECOGNITION SIAP'
+    );
+
+    statusBox.innerText =
+      'AI pengenalan wajah siap.';
+
+  }
+  catch (error) {
+
+    faceRecognitionReady =
+      false;
+
+    console.error(
+      'Face Recognition error:',
+      error
+    );
+
+    statusBox.innerText =
+      'AI pengenalan wajah gagal dimuat.';
+
+  }
+}
 
 /* =================================================
    CAPTURE
