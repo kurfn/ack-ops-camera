@@ -13,11 +13,30 @@
   <title>ACK OPS Camera</title>
 
 
+  <!-- =================================================
+       MEDIAPIPE FACE DETECTOR
+  ================================================== -->
+
+  <script type="module">
+
+    import {
+      FaceDetector,
+      FilesetResolver
+    } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.18";
+
+
+    window.ACKFaceDetector = FaceDetector;
+    window.ACKFilesetResolver = FilesetResolver;
+
+  </script>
+
+
   <style>
 
     * {
       box-sizing: border-box;
     }
+
 
     body {
 
@@ -89,6 +108,15 @@
       font-size: 16px;
 
       font-weight: bold;
+
+    }
+
+
+    button:disabled {
+
+      opacity: 0.5;
+
+      cursor: not-allowed;
 
     }
 
@@ -179,8 +207,9 @@
     id="captureButton"
     class="capture"
     onclick="capturePhoto()"
+    disabled
   >
-    Ambil Foto
+    Memuat kamera...
   </button>
 
 
@@ -206,7 +235,7 @@
     id="status"
     class="info"
   >
-    Membuka kamera...
+    Menyiapkan kamera dan pemeriksaan wajah...
   </div>
 
 
@@ -262,27 +291,58 @@ const timestamp =
   );
 
 
+/* =================================================
+   KONFIGURASI
+================================================= */
+
+const MAX_PHOTO_BYTES =
+  30 * 1024;
+
+
+/*
+ * Minimal confidence deteksi wajah.
+ *
+ * 0.5 = cukup seimbang antara
+ * sensitivitas dan ketepatan.
+ */
+
+const FACE_CONFIDENCE =
+  0.5;
+
 
 /* =================================================
-   CAMERA
+   CAMERA STATE
 ================================================= */
 
 let stream = null;
 
 let capturedPhoto = null;
 
+let faceDetector = null;
 
+let faceDetectorReady = false;
+
+
+/* =================================================
+   LOAD
+================================================= */
 
 window.addEventListener(
   'load',
-  function() {
+  async function() {
 
-    startCamera();
+    await startCamera();
+
+    await initializeFaceDetector();
 
   }
 );
 
 
+
+/* =================================================
+   CAMERA
+================================================= */
 
 async function startCamera() {
 
@@ -317,12 +377,47 @@ async function startCamera() {
       stream;
 
 
+    /*
+     * Pastikan metadata video sudah siap.
+     */
+
+    await new Promise(
+      function(resolve) {
+
+        if (
+          video.readyState >= 2
+        ) {
+
+          resolve();
+
+          return;
+
+        }
+
+
+        video.onloadedmetadata =
+          function() {
+
+            resolve();
+
+          };
+
+      }
+    );
+
+
     statusBox.innerText =
-      'Pastikan wajah terlihat jelas sebelum mengambil foto.';
+      'Kamera siap. Menyiapkan pemeriksaan wajah...';
 
   }
 
   catch (error) {
+
+    console.error(
+      'Camera error:',
+      error
+    );
+
 
     statusBox.innerText =
       'Kamera tidak dapat dibuka. Pastikan izin kamera sudah diberikan.';
@@ -334,10 +429,166 @@ async function startCamera() {
 
 
 /* =================================================
+   MEDIAPIPE FACE DETECTOR
+================================================= */
+
+async function initializeFaceDetector() {
+
+  const statusBox =
+    document.getElementById(
+      'status'
+    );
+
+
+  const captureButton =
+    document.getElementById(
+      'captureButton'
+    );
+
+
+  try {
+
+    statusBox.innerText =
+      'Memuat AI pemeriksaan wajah...';
+
+
+    /*
+     * Tunggu module MediaPipe tersedia.
+     *
+     * Module dimuat secara asynchronous.
+     */
+
+    let attempts = 0;
+
+
+    while (
+      (
+        !window.ACKFaceDetector ||
+        !window.ACKFilesetResolver
+      ) &&
+      attempts < 100
+    ) {
+
+      await new Promise(
+        function(resolve) {
+
+          setTimeout(
+            resolve,
+            100
+          );
+
+        }
+      );
+
+
+      attempts++;
+
+    }
+
+
+    if (
+      !window.ACKFaceDetector ||
+      !window.ACKFilesetResolver
+    ) {
+
+      throw new Error(
+        'MediaPipe gagal dimuat.'
+      );
+
+    }
+
+
+    const vision =
+      await window.ACKFilesetResolver
+        .forVisionTasks(
+          'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.18/wasm'
+        );
+
+
+    faceDetector =
+      await window.ACKFaceDetector
+        .createFromOptions(
+          vision,
+          {
+
+            baseOptions: {
+
+              modelAssetPath:
+                'https://storage.googleapis.com/mediapipe-models/face_detector/blaze_face_short_range/float16/1/blaze_face_short_range.tflite'
+
+            },
+
+            runningMode:
+              'IMAGE',
+
+            minDetectionConfidence:
+              FACE_CONFIDENCE
+
+          }
+        );
+
+
+    faceDetectorReady =
+      true;
+
+
+    captureButton.disabled =
+      false;
+
+
+    captureButton.innerText =
+      'Ambil Foto';
+
+
+    statusBox.innerText =
+      'Pastikan hanya satu wajah terlihat jelas sebelum mengambil foto.';
+
+  }
+
+  catch (error) {
+
+    console.error(
+      'Face detector error:',
+      error
+    );
+
+
+    faceDetectorReady =
+      false;
+
+
+    captureButton.disabled =
+      true;
+
+
+    captureButton.innerText =
+      'AI Wajah Tidak Siap';
+
+
+    statusBox.innerText =
+      'Pemeriksaan wajah gagal dimuat. Silakan buka ulang kamera.';
+
+  }
+
+}
+
+
+
+/* =================================================
    CAPTURE
 ================================================= */
 
-function capturePhoto() {
+async function capturePhoto() {
+
+  if (
+    !faceDetectorReady ||
+    !faceDetector
+  ) {
+
+    return;
+
+  }
+
 
   const video =
     document.getElementById(
@@ -348,6 +599,18 @@ function capturePhoto() {
   const canvas =
     document.getElementById(
       'canvas'
+    );
+
+
+  const statusBox =
+    document.getElementById(
+      'status'
+    );
+
+
+  const captureButton =
+    document.getElementById(
+      'captureButton'
     );
 
 
@@ -364,9 +627,25 @@ function capturePhoto() {
     !height
   ) {
 
+    statusBox.innerText =
+      'Kamera belum siap. Silakan tunggu sebentar.';
+
     return;
 
   }
+
+
+  /*
+   * Disable tombol sementara
+   * agar tidak double capture.
+   */
+
+  captureButton.disabled =
+    true;
+
+
+  statusBox.innerText =
+    'Memeriksa wajah...';
 
 
   canvas.width =
@@ -384,15 +663,17 @@ function capturePhoto() {
 
 
   /*
-   * Mirror selfie
+   * Mirror selfie.
    */
 
   ctx.save();
+
 
   ctx.translate(
     width,
     0
   );
+
 
   ctx.scale(
     -1,
@@ -412,6 +693,110 @@ function capturePhoto() {
   ctx.restore();
 
 
+  /* =================================================
+     FACE DETECTION
+  ================================================= */
+
+  let detectionResult;
+
+
+  try {
+
+    detectionResult =
+      faceDetector.detect(
+        canvas
+      );
+
+  }
+
+  catch (error) {
+
+    console.error(
+      'Face detection error:',
+      error
+    );
+
+
+    statusBox.innerText =
+      'Pemeriksaan wajah gagal. Silakan coba lagi.';
+
+
+    captureButton.disabled =
+      false;
+
+
+    return;
+
+  }
+
+
+  const detections =
+    detectionResult &&
+    detectionResult.detections
+      ? detectionResult.detections
+      : [];
+
+
+  const faceCount =
+    detections.length;
+
+
+  console.log(
+    'Jumlah wajah:',
+    faceCount
+  );
+
+
+  /* =================================================
+     0 WAJAH
+  ================================================= */
+
+  if (
+    faceCount === 0
+  ) {
+
+    statusBox.innerText =
+      'Wajah tidak terdeteksi. Pastikan wajah terlihat jelas lalu coba lagi.';
+
+
+    captureButton.disabled =
+      false;
+
+
+    return;
+
+  }
+
+
+  /* =================================================
+     LEBIH DARI 1 WAJAH
+  ================================================= */
+
+  if (
+    faceCount > 1
+  ) {
+
+    statusBox.innerText =
+      'Terdeteksi lebih dari satu wajah. Pastikan hanya satu orang di dalam foto.';
+
+
+    captureButton.disabled =
+      false;
+
+
+    return;
+
+  }
+
+
+  /* =================================================
+     SATU WAJAH
+  ================================================= */
+
+  statusBox.innerText =
+    'Wajah terdeteksi. Memproses foto...';
+
+
   /*
    * WATERMARK
    */
@@ -423,12 +808,76 @@ function capturePhoto() {
   );
 
 
-  capturedPhoto =
-    canvas.toDataURL(
-      'image/jpeg',
-      0.88
+  /* =================================================
+     COMPRESS MAX 30 KB
+  ================================================= */
+
+  let compressed;
+
+
+  try {
+
+    compressed =
+      compressCanvasToMaxBytes(
+        canvas,
+        MAX_PHOTO_BYTES
+      );
+
+  }
+
+  catch (error) {
+
+    console.error(
+      'Compression error:',
+      error
     );
 
+
+    statusBox.innerText =
+      'Foto terlalu besar dan gagal dikompres. Silakan coba lagi.';
+
+
+    captureButton.disabled =
+      false;
+
+
+    return;
+
+  }
+
+
+  if (
+    !compressed ||
+    !compressed.dataUrl
+  ) {
+
+    statusBox.innerText =
+      'Foto gagal diproses. Silakan coba lagi.';
+
+
+    captureButton.disabled =
+      false;
+
+
+    return;
+
+  }
+
+
+  capturedPhoto =
+    compressed.dataUrl;
+
+
+  console.log(
+    'Final photo size:',
+    compressed.bytes,
+    'bytes'
+  );
+
+
+  /* =================================================
+     PREVIEW
+  ================================================= */
 
   const preview =
     document.getElementById(
@@ -477,12 +926,12 @@ function capturePhoto() {
     );
 
 
-  document
-    .getElementById(
-      'status'
-    )
-    .innerText =
-      'Periksa foto sebelum digunakan.';
+  statusBox.innerText =
+    'Foto siap. Ukuran: ' +
+    formatBytes(
+      compressed.bytes
+    ) +
+    '. Periksa foto sebelum digunakan.';
 
 }
 
@@ -684,6 +1133,326 @@ function drawWatermark(
 
 
 /* =================================================
+   COMPRESS PHOTO
+================================================= */
+
+function compressCanvasToMaxBytes(
+  sourceCanvas,
+  maxBytes
+) {
+
+  /*
+   * Kita mencoba beberapa kombinasi:
+   *
+   * 1. kualitas JPEG
+   * 2. resolusi
+   *
+   * sampai ukuran benar-benar
+   * <= 30 KB.
+   */
+
+  const originalWidth =
+    sourceCanvas.width;
+
+
+  const originalHeight =
+    sourceCanvas.height;
+
+
+  const workingCanvas =
+    document.createElement(
+      'canvas'
+    );
+
+
+  const workingCtx =
+    workingCanvas.getContext(
+      '2d'
+    );
+
+
+  /*
+   * Mulai dari ukuran asli.
+   */
+
+  const scaleLevels = [
+
+    1.00,
+
+    0.90,
+
+    0.80,
+
+    0.70,
+
+    0.60,
+
+    0.50,
+
+    0.40,
+
+    0.35,
+
+    0.30,
+
+    0.25
+
+  ];
+
+
+  const qualityLevels = [
+
+    0.88,
+
+    0.82,
+
+    0.76,
+
+    0.70,
+
+    0.64,
+
+    0.58,
+
+    0.52,
+
+    0.46,
+
+    0.40,
+
+    0.34,
+
+    0.28,
+
+    0.22,
+
+    0.18
+
+  ];
+
+
+  let bestResult =
+    null;
+
+
+  for (
+    let s = 0;
+    s < scaleLevels.length;
+    s++
+  ) {
+
+    const scale =
+      scaleLevels[s];
+
+
+    const width =
+      Math.max(
+        1,
+        Math.round(
+          originalWidth *
+          scale
+        )
+      );
+
+
+    const height =
+      Math.max(
+        1,
+        Math.round(
+          originalHeight *
+          scale
+        )
+      );
+
+
+    workingCanvas.width =
+      width;
+
+
+    workingCanvas.height =
+      height;
+
+
+    workingCtx.clearRect(
+      0,
+      0,
+      width,
+      height
+    );
+
+
+    workingCtx.drawImage(
+      sourceCanvas,
+      0,
+      0,
+      width,
+      height
+    );
+
+
+    for (
+      let q = 0;
+      q < qualityLevels.length;
+      q++
+    ) {
+
+      const quality =
+        qualityLevels[q];
+
+
+      const dataUrl =
+        workingCanvas.toDataURL(
+          'image/jpeg',
+          quality
+        );
+
+
+      const bytes =
+        dataUrlToBytes(
+          dataUrl
+        );
+
+
+      /*
+       * Simpan hasil terkecil
+       * sebagai fallback.
+       */
+
+      if (
+        !bestResult ||
+        bytes < bestResult.bytes
+      ) {
+
+        bestResult = {
+
+          dataUrl:
+            dataUrl,
+
+          bytes:
+            bytes
+
+        };
+
+      }
+
+
+      /*
+       * HARD LIMIT
+       */
+
+      if (
+        bytes <= maxBytes
+      ) {
+
+        return {
+
+          dataUrl:
+            dataUrl,
+
+          bytes:
+            bytes
+
+        };
+
+      }
+
+    }
+
+  }
+
+
+  /*
+   * Kalau sampai sini berarti
+   * belum berhasil mencapai limit.
+   */
+
+  throw new Error(
+    'Tidak dapat mencapai ukuran maksimum 30 KB. Ukuran terkecil: ' +
+    (
+      bestResult
+        ? bestResult.bytes
+        : 0
+    ) +
+    ' bytes.'
+  );
+
+}
+
+
+
+/* =================================================
+   DATA URL → BYTES
+================================================= */
+
+function dataUrlToBytes(
+  dataUrl
+) {
+
+  const base64 =
+    dataUrl.split(
+      ','
+    )[1] || '';
+
+
+  /*
+   * Ukuran byte binary
+   * dari Base64.
+   */
+
+  const padding =
+    (
+      base64.endsWith('==')
+        ? 2
+        : (
+            base64.endsWith('=')
+              ? 1
+              : 0
+          )
+    );
+
+
+  return Math.floor(
+    base64.length *
+    3 /
+    4
+  ) -
+  padding;
+
+}
+
+
+
+/* =================================================
+   FORMAT BYTES
+================================================= */
+
+function formatBytes(
+  bytes
+) {
+
+  if (
+    bytes < 1024
+  ) {
+
+    return (
+      bytes +
+      ' B'
+    );
+
+  }
+
+
+  return (
+    (bytes / 1024)
+      .toFixed(1) +
+    ' KB'
+  );
+
+}
+
+
+
+/* =================================================
    RETAKE
 ================================================= */
 
@@ -722,6 +1491,13 @@ function retakePhoto() {
 
   document
     .getElementById(
+      'captureButton'
+    ).disabled =
+      false;
+
+
+  document
+    .getElementById(
       'retryButton'
     )
     .classList.add(
@@ -755,7 +1531,9 @@ function retakePhoto() {
 
 function sendPhoto() {
 
-  if (!capturedPhoto) {
+  if (
+    !capturedPhoto
+  ) {
 
     return;
 
@@ -773,12 +1551,8 @@ function sendPhoto() {
   /*
    * Kirim ke Apps Script parent.
    *
-   * Target "*" sengaja digunakan karena
-   * Apps Script Web App dapat memiliki origin
-   * berbeda tergantung deployment.
-   *
-   * Parent tetap memverifikasi bahwa pengirim
-   * berasal dari kurfn.github.io.
+   * Struktur ACK_OPS_PHOTO
+   * TETAP SAMA dengan versi lama.
    */
 
   if (
@@ -788,6 +1562,7 @@ function sendPhoto() {
     window.opener.postMessage(
 
       {
+
         type:
           'ACK_OPS_PHOTO',
 
@@ -839,6 +1614,28 @@ window.addEventListener(
 
           }
         );
+
+    }
+
+
+    if (
+      faceDetector
+    ) {
+
+      try {
+
+        faceDetector.close();
+
+      }
+
+      catch (error) {
+
+        console.log(
+          'Face detector close:',
+          error
+        );
+
+      }
 
     }
 
