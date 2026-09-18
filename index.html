@@ -1068,15 +1068,63 @@ async function handleRegistrationCapture(
     currentNumber +
     '...';
 
-  const dataUrl =
-    canvas.toDataURL(
-      'image/jpeg',
-      0.9
+   let compressed;
+
+try {
+
+  compressed =
+    compressCanvasToMaxBytes(
+      canvas,
+      MAX_PHOTO_BYTES
     );
 
-  registrationPhotos.push(
-    dataUrl
+}
+
+catch (error) {
+
+  console.error(
+    'Registration compression error:',
+    error
   );
+
+  statusBox.innerText =
+    'Foto Face ' +
+    currentNumber +
+    ' gagal dikompres. Silakan coba lagi.';
+
+  captureButton.disabled =
+    false;
+
+  return;
+}
+
+if (
+  !compressed ||
+  !compressed.dataUrl
+) {
+
+  statusBox.innerText =
+    'Foto Face ' +
+    currentNumber +
+    ' gagal diproses. Silakan coba lagi.';
+
+  captureButton.disabled =
+    false;
+
+  return;
+}
+
+registrationPhotos.push(
+  compressed.dataUrl
+);
+
+console.log(
+  'Registration Face ' +
+  currentNumber +
+  ' size:',
+  compressed.bytes,
+  'bytes'
+);
 
   /*
    * Belum 3 foto
