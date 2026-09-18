@@ -1051,7 +1051,7 @@ if (
 }
 
 /* =================================================
-   FACE REGISTRATION CAPTURE - STEP 2C
+   FACE REGISTRATION CAPTURE
 ================================================= */
 
 async function handleRegistrationCapture(
@@ -1068,69 +1068,107 @@ async function handleRegistrationCapture(
     currentNumber +
     '...';
 
-   let compressed;
+  /*
+   * COMPRESS MAX 30 KB
+   *
+   * Registrasi wajah juga wajib mengikuti
+   * batas ukuran yang sama dengan foto absensi.
+   */
+  let compressed;
 
-try {
+  try {
 
-  compressed =
-    compressCanvasToMaxBytes(
-      canvas,
-      MAX_PHOTO_BYTES
+    compressed =
+      compressCanvasToMaxBytes(
+        canvas,
+        MAX_PHOTO_BYTES
+      );
+
+  }
+
+  catch (error) {
+
+    console.error(
+      'Registration compression error:',
+      error
     );
 
-}
+    statusBox.innerText =
+      'Foto Face ' +
+      currentNumber +
+      ' gagal dikompres. Silakan coba lagi.';
 
-catch (error) {
+    captureButton.disabled =
+      false;
 
-  console.error(
-    'Registration compression error:',
-    error
-  );
+    return;
+  }
 
-  statusBox.innerText =
-    'Foto Face ' +
-    currentNumber +
-    ' gagal dikompres. Silakan coba lagi.';
-
-  captureButton.disabled =
-    false;
-
-  return;
-}
-
-if (
-  !compressed ||
-  !compressed.dataUrl
-) {
-
-  statusBox.innerText =
-    'Foto Face ' +
-    currentNumber +
-    ' gagal diproses. Silakan coba lagi.';
-
-  captureButton.disabled =
-    false;
-
-  return;
-}
-
-registrationPhotos.push(
-  compressed.dataUrl
-);
-
-console.log(
-  'Registration Face ' +
-  currentNumber +
-  ' size:',
-  compressed.bytes,
-  'bytes'
-);
 
   /*
-   * Belum 3 foto
+   * Pastikan hasil compression tersedia.
    */
   if (
-    registrationPhotos.length < 3
+    !compressed ||
+    !compressed.dataUrl
+  ) {
+
+    statusBox.innerText =
+      'Foto Face ' +
+      currentNumber +
+      ' gagal diproses. Silakan coba lagi.';
+
+    captureButton.disabled =
+      false;
+
+    return;
+  }
+
+
+  /*
+   * HARD LIMIT
+   *
+   * Jangan pernah memasukkan foto
+   * yang lebih dari 30 KB.
+   */
+  if (
+    compressed.bytes >
+    MAX_PHOTO_BYTES
+  ) {
+
+    statusBox.innerText =
+      'Foto terlalu besar. Silakan ambil ulang.';
+
+    captureButton.disabled =
+      false;
+
+    return;
+  }
+
+
+  /*
+   * Simpan foto hasil compression.
+   */
+  registrationPhotos.push(
+    compressed.dataUrl
+  );
+
+
+  console.log(
+    'Registration Face ' +
+    currentNumber +
+    ' size:',
+    compressed.bytes,
+    'bytes'
+  );
+
+
+  /*
+   * Belum 3 foto.
+   */
+  if (
+    registrationPhotos.length <
+    3
   ) {
 
     const nextNumber =
@@ -1139,7 +1177,9 @@ console.log(
     statusBox.innerText =
       'Face ' +
       currentNumber +
-      ' berhasil. Silakan ambil Face ' +
+      ' berhasil (' +
+      formatBytes(compressed.bytes) +
+      '). Silakan ambil Face ' +
       nextNumber +
       '.';
 
@@ -1149,19 +1189,20 @@ console.log(
     return;
   }
 
+
   /*
-   * Sudah 3 foto
+   * Sudah 3 foto.
    */
   statusBox.innerText =
-    '3 foto wajah berhasil diambil. Memproses...';
+    '3 foto wajah berhasil diambil. Mengirim data...';
 
   captureButton.classList.add(
     'hidden'
   );
 
+
   /*
    * Kirim ke parent Apps Script.
-   * Belum disimpan ke FACE_DATA.
    */
   if (
     window.opener
@@ -1186,6 +1227,7 @@ console.log(
       },
       '*'
     );
+
 
     setTimeout(
       function() {
